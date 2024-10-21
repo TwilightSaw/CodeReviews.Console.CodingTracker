@@ -62,9 +62,10 @@ Please, choose an option from the list below:
             Console.Write("Type data of your Coding Session: ");
             var dateInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$",
                                 "Wrong data format, try again. Example: 01.01.2001 or T for today's date: ");
-            Console.Write("Type your previous Session start time: ");
+            var x = userInput.ChooseSession(controller.Read(connection, dateInput));
+            /*Console.Write("Type your previous Session start time: ");
             var previousTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$|^N|n$",
-                                "Wrong data format, try again. Example: 10:10:10 or N for today's date: ");
+                                "Wrong data format, try again. Example: 10:10:10 or N for today's date: ");*/
             Console.Write("Type your new Start Session start time: ");
             var startTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$|^N|n$",
                                 "Wrong data format, try again. Example: 10:10:10 or N for today's date: ");
@@ -73,7 +74,7 @@ Please, choose an option from the list below:
              //                   "Wrong data format, try again. Example: 12:12:12: ");
             session.StartTime = DateTime.Parse(dateInput + " " + startTimeInput);
             //session.EndTime = DateTime.Parse(dateInput + " " + endTimeInput);
-            controller.Update(connection, session, previousTimeInput);
+            controller.Update(connection, session, x.StartTime.ToLongTimeString());
             break;
         case 3:
             controller.Read(connection);

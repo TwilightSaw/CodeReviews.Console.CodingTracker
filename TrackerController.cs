@@ -56,31 +56,43 @@ namespace CodingTracker.TwilightSaw
         public void Read(SqliteConnection connection)
         {
             var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from [{Name}]";
-            var data = connection.Query(selectTableQuery).ToList();
+            List<CodingSession> data = connection.Query<CodingSession>(selectTableQuery).ToList();
             foreach (var x in data)
             {
                 
-                Console.WriteLine(@$"Date: {x.Date} Start of Session: {x.StartTime} End of Session: {x.EndTime} Total Session Duration: {x.Duration}");
+                Console.WriteLine(@$"Date: {x.Date} Start of Session: {x.StartTime.ToLongTimeString()} End of Session: {x.EndTime.ToLongTimeString()} Total Session Duration: {x.Duration}");
             }
 
         }
 
+        public List<CodingSession> Read(SqliteConnection connection, string date)
+        {
+            var iterator = 0;
+            var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from [{Name}] 
+                                    WHERE Date = @Date";
+            List<CodingSession> data = connection.Query<CodingSession>(selectTableQuery, new {Date = date}).ToList();
+            Console.WriteLine($"Date: {data[0].Date} ");
+            foreach (var x in data)
+            {
+                iterator++;
+                Console.WriteLine(@$"{iterator}. Start of Session: {x.StartTime.ToLongTimeString()} End of Session: {x.EndTime.ToLongTimeString()} Total Session Duration: {x.Duration}");
+            }
+
+            return data;
+        }
+
         public void Update(SqliteConnection connection, CodingSession session, string previousTime)
         {
-            //FIX
-            var selectTableDateQuery = @$"SELECT Date from [{Name}]
+            
+            var selectTableDateQuery = @$"SELECT Date, EndTime from [{Name}]
                                    WHERE Date = @Date AND StartTime = @PreviousTime";
 
-            var selectTableEndTimeQuery = @$"SELECT EndTime from [{Name}]
-                                   WHERE Date = @Date AND StartTime = @PreviousTime";
-
-            connection.Execute(selectTableDateQuery, new
+            var r = connection.QuerySingleOrDefault(selectTableDateQuery, new
             {
                 Date = session.StartTime.Date.ToShortDateString(),
                 PreviousTime = previousTime
             });
-            session.EndTime = DateTime.Parse(selectTableDateQuery + " " + selectTableEndTimeQuery);
-            //FIX
+            session.EndTime = DateTime.Parse(r.Date + " " + r.EndTime);
             var insertTableQuery = $@"UPDATE [{Name}] 
         SET StartTime = @StartTime, Duration = @Duration
         Where Date = @Date AND StartTime = @PreviousTime";

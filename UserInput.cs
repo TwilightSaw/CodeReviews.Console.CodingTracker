@@ -42,5 +42,33 @@ namespace CodingTracker.TwilightSaw
 
             return input;
         }
+
+        public CodingSession ChooseSession(List<CodingSession> data)
+        {
+            List<string> x = new List<string>();
+            for (int i = 0; i < data.Count ; i++)
+            {
+                x.Add((i+1).ToString());
+            }
+            Console.Write("Please, choose desired Coding Session: ");
+            var r = CreateRegex(CreateDynamicRegex(x), "Fuck you");
+            return data[int.Parse(r)-1];
+        }
+
+        static string CreateDynamicRegex(List<string> elements)
+        {
+            // Екранування спеціальних символів у кожному елементі
+            List<string> escapedElements = new List<string>();
+            foreach (string element in elements)
+            {
+                escapedElements.Add(Regex.Escape(element));
+            }
+
+            // Об'єднання елементів у регулярний вираз через "або" (|)
+            string pattern = string.Join("|", escapedElements);
+
+            // Додаємо межі слова для точного збігу
+            return $@"\b({pattern})\b";
+        }
     }
 }
