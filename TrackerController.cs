@@ -104,11 +104,11 @@ namespace CodingTracker.TwilightSaw
             });
         }
 
-        public void Delete(SqliteConnection connection, string date)
+        public void Delete(SqliteConnection connection, string date, string previousTime)
         {
             var deleteTableQuery = $@"DELETE FROM [{Name}]
-                WHERE Date = @Date";
-            connection.Execute(deleteTableQuery, new { Date = date});
+                WHERE Date = @Date AND StartTime = @PreviousTime";
+            connection.Execute(deleteTableQuery, new { Date = date, PreviousTime = previousTime});
         }
 
         public void SetTimer()

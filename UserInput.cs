@@ -51,24 +51,33 @@ namespace CodingTracker.TwilightSaw
                 x.Add((i+1).ToString());
             }
             Console.Write("Please, choose desired Coding Session: ");
-            var r = CreateRegex(CreateDynamicRegex(x), "Fuck you");
+            var r = CreateRegex(CreateDynamicRegex(x), "Insert only the number that is allocated for your Coding Session: ");
             return data[int.Parse(r)-1];
         }
 
         static string CreateDynamicRegex(List<string> elements)
         {
-            // Екранування спеціальних символів у кожному елементі
+            // Protecting Regex from special characters
             List<string> escapedElements = new List<string>();
             foreach (string element in elements)
             {
                 escapedElements.Add(Regex.Escape(element));
             }
 
-            // Об'єднання елементів у регулярний вираз через "або" (|)
+            // Gather elements in one string
             string pattern = string.Join("|", escapedElements);
 
-            // Додаємо межі слова для точного збігу
-            return $@"\b({pattern})\b";
+            return $@"(?<!-)\b({pattern})\b";
+        }
+
+        public static string CheckT(string dateInput)
+        {
+            return dateInput is "T" or "t" ? DateTime.Now.ToShortDateString() : dateInput;
+        }
+
+        public static string CheckN(string timeInput)
+        {
+            return timeInput is "N" or "n" ? DateTime.Now.ToLongTimeString() : timeInput;
         }
     }
 }
