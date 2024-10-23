@@ -76,23 +76,30 @@ Please, choose an option from the list below:
             controller.Create(connection, session);
             break;
         case 3:
-            // ADD CHOOSING NEW END TIME OF SESSION
-
             Console.Write("Type date of your Coding Session or type T for today's date: ");
             var dateChangeInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$",
                 "Wrong data format, try again. Example: 01.01.2001 or T for today's date: ");
             dateChangeInput = UserInput.CheckT(dateChangeInput);
 
-           /* Console.Write("Type S to change Start Time of Session or type E to change End Time: ");
-            var sessionTimeInput = userInput.CreateRegex(@"^S|s$|^E|e$", "Please, type only listed symbols: ");*/
+            Console.Write("Type S to change Start Time of Session or type E to change End Time: ");
+            var sessionTimeInput = userInput.CreateRegex(@"^S|s$|^E|e$", "Please, type only listed symbols: ");
 
             var chooseChangeSession = userInput.ChooseSession(controller.Read(connection, dateChangeInput));
             Console.Write("Type your new Coding time: ");
             var ChangeTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$|^N|n$",
                 "Wrong data format, try again. Example: 10:10:10: ");
 
-            session.StartTime = DateTime.Parse(dateChangeInput + " " + ChangeTimeInput);
-            controller.Update(connection, session, chooseChangeSession.StartTime.ToLongTimeString());
+            if (sessionTimeInput is "S" or "s")
+            {
+                session.StartTime = DateTime.Parse(dateChangeInput + " " + ChangeTimeInput);
+                controller.Update(connection, session, chooseChangeSession.StartTime.ToLongTimeString(), sessionTimeInput);
+            }
+            else
+            {
+                session.EndTime = DateTime.Parse(dateChangeInput + " " + ChangeTimeInput);
+                controller.Update(connection, session, chooseChangeSession.EndTime.ToLongTimeString(), sessionTimeInput);
+            }
+
             break;
         case 4:
             controller.Read(connection);

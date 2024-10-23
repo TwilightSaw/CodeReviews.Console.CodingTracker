@@ -81,27 +81,55 @@ namespace CodingTracker.TwilightSaw
             return data;
         }
 
-        public void Update(SqliteConnection connection, CodingSession session, string previousTime)
+        public void Update(SqliteConnection connection, CodingSession session, string previousTime, string time)
         {
-            
-            var selectTableDateQuery = @$"SELECT Date, EndTime from [{Name}]
+            if (time is "S" or "s")
+            {
+                var selectTableDateQuery = @$"SELECT Date, EndTime from [{Name}]
                                    WHERE Date = @Date AND StartTime = @PreviousTime";
 
-            var r = connection.QuerySingleOrDefault(selectTableDateQuery, new
-            {
-                Date = session.StartTime.Date.ToShortDateString(),
-                PreviousTime = previousTime
-            });
-            session.EndTime = DateTime.Parse(r.Date + " " + r.EndTime);
-            var insertTableQuery = $@"UPDATE [{Name}] 
+                var r = connection.QuerySingleOrDefault(selectTableDateQuery, new
+                {
+                    Date = session.StartTime.Date.ToShortDateString(),
+                    PreviousTime = previousTime
+                });
+                session.EndTime = DateTime.Parse(r.Date + " " + r.EndTime);
+                var insertTableQuery = $@"UPDATE [{Name}] 
         SET StartTime = @StartTime, Duration = @Duration
         Where Date = @Date AND StartTime = @PreviousTime";
-        
-            connection.Execute(insertTableQuery, new {Date = session.StartTime.Date.ToShortDateString(), 
-                                                           StartTime = session.StartTime.ToLongTimeString(),
-                                                           PreviousTime = previousTime,
-                                                           Duration = session.CalculateDuration()
-            });
+
+                connection.Execute(insertTableQuery, new
+                {
+                    Date = session.StartTime.Date.ToShortDateString(),
+                    StartTime = session.StartTime.ToLongTimeString(),
+                    PreviousTime = previousTime,
+                    Duration = session.CalculateDuration()
+                });
+            }
+            else
+            {
+                var selectTableDateQuery = @$"SELECT Date, StartTime from [{Name}]
+                                   WHERE Date = @Date AND EndTime = @PreviousTime";
+
+                var r = connection.QuerySingleOrDefault(selectTableDateQuery, new
+                {
+                    Date = session.EndTime.Date.ToShortDateString(),
+                    PreviousTime = previousTime
+                });
+                session.StartTime = DateTime.Parse(r.Date + " " + r.StartTime);
+                var insertTableQuery = $@"UPDATE [{Name}] 
+        SET EndTime = @EndTime, Duration = @Duration
+        Where Date = @Date AND EndTime = @PreviousTime";
+
+                connection.Execute(insertTableQuery, new
+                {
+                    Date = session.EndTime.Date.ToShortDateString(),
+                    EndTime = session.EndTime.ToLongTimeString(),
+                    PreviousTime = previousTime,
+                    Duration = session.CalculateDuration()
+                });
+            }
+            
         }
 
         public void Delete(SqliteConnection connection, string date, string previousTime)
