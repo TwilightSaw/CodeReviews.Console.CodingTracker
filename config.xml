@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+	<appSettings>
+		<add key="databasePath" value="$@&quot;C:\Users\Alex\source\repos\projects\CodeReviews.Console.HabitTracker\bin\Debug\net8.0\{dbString}&quot;" />
+		<add key="connection" value="Data Source=coding-tracker.db" />
+	</appSettings>
+</configuration>

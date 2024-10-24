@@ -4,6 +4,9 @@ using Microsoft.Data.Sqlite;
 using Spectre.Console;
 using SQLitePCL;
 
+using System.Configuration;
+using System.Collections.Specialized;
+
 var userInput = new UserInput();
 
 var end = true;
