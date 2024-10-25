@@ -3,6 +3,7 @@ using Dapper;
 using Microsoft.Data.Sqlite;
 using Spectre.Console;
 using SQLitePCL;
+using System.IO;
 
 using System.Configuration;
 using System.Collections.Specialized;
@@ -12,7 +13,7 @@ var userInput = new UserInput();
 var end = true;
 
 raw.SetProvider(new SQLite3Provider_e_sqlite3());
-using var connection = new SqliteConnection(Config.connection);
+using var connection = new SqliteConnection(ConfigurationManager.AppSettings["connection"]);
 connection.Open();
 
 var session = new CodingSession();
