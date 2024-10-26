@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Spectre.Console;
 
 namespace CodingTracker.TwilightSaw
 {
@@ -17,59 +18,70 @@ namespace CodingTracker.TwilightSaw
             return input;
         }
 
-        public int CreateInt()
+        public int CreateInt(string message)
         {
             int inputInt;
             input = Console.ReadLine();
             while (!Int32.TryParse(input, out inputInt))
             {
-                Console.Write("Write number, please: ");
+                Console.Write(message);
                 input = Console.ReadLine();
             }
 
             return inputInt;
         }
 
-        public string CreateRegex(string regexString, string message)
+        public int CreateSpecifiedInt(int bound, string message)
         {
+            int inputInt;
             input = Console.ReadLine();
-            Regex regex = new Regex(regexString);
-            while (!regex.IsMatch(input))
+            while (!Int32.TryParse(input, out inputInt))
             {
                 Console.Write(message);
                 input = Console.ReadLine();
             }
+            while (int.Parse(input) > bound || int.Parse(input) < 1)
+            {
+                Console.Write(message);
+                input = Console.ReadLine();
+            }
+            return inputInt;
+        }
 
-            return input;
+        public string CreateRegex(string regexString, string messageStart, string messageError)
+        {
+            Regex regex = new Regex(regexString);
+            var input = AnsiConsole.Prompt(
+                new TextPrompt<string>($"[green]{messageStart}[/]")
+                    .Validate(value =>
+                    {
+                        return regex.IsMatch(value)
+                            ? ValidationResult.Success()
+                            : ValidationResult.Error(messageError);
+                    }));
+            
+           return input;
         }
 
         public CodingSession ChooseSession(List<CodingSession> data)
         {
-            List<string> x = new List<string>();
+            var chosenSession = AnsiConsole.Prompt(
+                new SelectionPrompt<CodingSession>()
+                    .Title("[blue]Please, choose an option from the list below:[/]")
+                    .PageSize(10)
+                    .AddChoices(
+                        data));
+            /*List<string> x = new List<string>();
             for (int i = 0; i < data.Count ; i++)
             {
                 x.Add((i+1).ToString());
             }
             Console.Write("Please, choose desired Coding Session: ");
-            var r = CreateRegex(CreateDynamicRegex(x), "Insert only the number that is allocated for your Coding Session: ");
-            return data[int.Parse(r)-1];
+            var r = CreateSpecifiedInt(data.Count, "Insert only the number that is allocated for your Coding Session: ");*/
+            return chosenSession;
         }
 
-        static string CreateDynamicRegex(List<string> elements)
-        {
-            // Protecting Regex from special characters
-            List<string> escapedElements = new List<string>();
-            foreach (string element in elements)
-            {
-                escapedElements.Add(Regex.Escape(element));
-            }
-
-            // Gather elements in one string
-            string pattern = string.Join("|", escapedElements);
-
-            return $@"(?<!-)\b({pattern})\b";
-        }
-
+        
         public static string CheckT(string dateInput)
         {
             return dateInput is "T" or "t" ? DateTime.Now.ToShortDateString() : dateInput;

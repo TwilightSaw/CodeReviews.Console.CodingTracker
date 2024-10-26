@@ -19,7 +19,15 @@ public struct CodingSession
     public string CalculateDuration()
     {
         Duration = (TimeSpan.Parse(EndTime.ToLongTimeString()) - TimeSpan.Parse(StartTime.ToLongTimeString())).ToString();
+        if (TimeSpan.Parse(Duration).Ticks < 0)
+        {
+            throw new Exception("Bad start or end time.");
+        }
         return Duration;
     }
 
+    public override string ToString()
+    {
+        return $"{Date} {StartTime.ToLongTimeString()} {EndTime.ToLongTimeString()} {Duration}" ;
+    }
 }

@@ -15,6 +15,7 @@ namespace CodingTracker.TwilightSaw
 {
     internal class TrackerController
     {
+        private Validation validation = new();
         private const string Name = "Tracker";
         private System.Timers.Timer aTimer;
         private int elapsedSeconds;
@@ -47,13 +48,35 @@ namespace CodingTracker.TwilightSaw
             @EndTime,
             @Duration
         )";
-
-            connection.Execute(insertTableQuery, new { Date = session.StartTime.Date.ToShortDateString(), 
-                                                             StartTime = session.StartTime.ToLongTimeString(), 
-                                                             EndTime = session.EndTime.ToLongTimeString(), 
-                                                             Duration = session.CalculateDuration() });
+            validation.CheckExecute(() => connection.Execute(insertTableQuery, new
+            {
+                Date = session.StartTime.Date.ToShortDateString(),
+                StartTime = session.StartTime.ToLongTimeString(),
+                EndTime = session.EndTime.ToLongTimeString(),
+                Duration = session.CalculateDuration()
+            }));
         }
-        
+
+
+
+        public void CreateWithTimer(SqliteConnection connection, CodingSession session)
+        {
+
+            //VALIDATION OF TIMER AFTER 00:00?
+            var dateInputC = DateTime.Now;
+            session.StartTime = DateTime.Parse(dateInputC.ToShortDateString() + " " + dateInputC.ToLongTimeString());
+            SetTimer();
+
+            Console.WriteLine("Press any key to stop the timer.");
+            Console.ReadKey();
+
+            StopTimer();
+
+            dateInputC = DateTime.Now;
+            session.EndTime = DateTime.Parse(dateInputC.ToShortDateString() + " " + dateInputC.ToLongTimeString());
+            Create(connection, session);
+        }
+
         public void Read(SqliteConnection connection)
         {
             var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from [{Name}]";
@@ -72,13 +95,7 @@ namespace CodingTracker.TwilightSaw
             var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from [{Name}] 
                                     WHERE Date = @Date";
             List<CodingSession> data = connection.Query<CodingSession>(selectTableQuery, new {Date = date}).ToList();
-            Console.WriteLine($"Date: {data[0].Date} ");
-            foreach (var x in data)
-            {
-                iterator++;
-                Console.WriteLine(@$"{iterator}. Start of Session: {x.StartTime.ToLongTimeString()} End of Session: {x.EndTime.ToLongTimeString()} Total Session Duration: {x.Duration}");
-            }
-
+            validation.CheckRead(() => Console.WriteLine($"Date: {data[0].Date} "), "Date is not existed.");
             return data;
         }
 
@@ -155,11 +172,7 @@ namespace CodingTracker.TwilightSaw
         }
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
         {
-            var currentTop1 = Console.CursorTop;
-            var currentLeft2 = Console.CursorLeft;
-
             elapsedSeconds++;
-
             Console.Write($"\rTimer: {elapsedSeconds / 60:D2}:{elapsedSeconds % 60:D2}");
         }
     }
