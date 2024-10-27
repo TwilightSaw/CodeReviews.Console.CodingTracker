@@ -71,22 +71,23 @@ namespace CodingTracker.TwilightSaw
             Console.ReadKey();
 
             StopTimer();
-
+            elapsedSeconds = 0;
             dateInputC = DateTime.Now;
             session.EndTime = DateTime.Parse(dateInputC.ToShortDateString() + " " + dateInputC.ToLongTimeString());
+
+            if (TimeSpan.Parse(session.CalculateDuration()).Ticks < 0)
+            {
+
+            }
             Create(connection, session);
+            
         }
 
-        public void Read(SqliteConnection connection)
+        public List<CodingSession> Read(SqliteConnection connection)
         {
             var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from [{Name}]";
             List<CodingSession> data = connection.Query<CodingSession>(selectTableQuery).ToList();
-            foreach (var x in data)
-            {
-                
-                Console.WriteLine(@$"Date: {x.Date} Start of Session: {x.StartTime.ToLongTimeString()} End of Session: {x.EndTime.ToLongTimeString()} Total Session Duration: {x.Duration}");
-            }
-
+            return data;
         }
 
         public List<CodingSession> Read(SqliteConnection connection, string date)
@@ -101,7 +102,7 @@ namespace CodingTracker.TwilightSaw
 
         public void Update(SqliteConnection connection, CodingSession session, string previousTime, string time)
         {
-            if (time is "S" or "s")
+            if (time is "Change Start Time")
             {
                 var selectTableDateQuery = @$"SELECT Date, EndTime from [{Name}]
                                    WHERE Date = @Date AND StartTime = @PreviousTime";
@@ -116,13 +117,13 @@ namespace CodingTracker.TwilightSaw
         SET StartTime = @StartTime, Duration = @Duration
         Where Date = @Date AND StartTime = @PreviousTime";
 
-                connection.Execute(insertTableQuery, new
+                validation.CheckExecute(() => connection.Execute(insertTableQuery, new
                 {
                     Date = session.StartTime.Date.ToShortDateString(),
                     StartTime = session.StartTime.ToLongTimeString(),
                     PreviousTime = previousTime,
                     Duration = session.CalculateDuration()
-                });
+                }));
             }
             else
             {
@@ -139,13 +140,13 @@ namespace CodingTracker.TwilightSaw
         SET EndTime = @EndTime, Duration = @Duration
         Where Date = @Date AND EndTime = @PreviousTime";
 
-                connection.Execute(insertTableQuery, new
+                validation.CheckExecute(() => connection.Execute(insertTableQuery, new
                 {
                     Date = session.EndTime.Date.ToShortDateString(),
                     EndTime = session.EndTime.ToLongTimeString(),
                     PreviousTime = previousTime,
                     Duration = session.CalculateDuration()
-                });
+                }));
             }
             
         }
@@ -174,6 +175,25 @@ namespace CodingTracker.TwilightSaw
         {
             elapsedSeconds++;
             Console.Write($"\rTimer: {elapsedSeconds / 60:D2}:{elapsedSeconds % 60:D2}");
+        }
+
+        public (int, TimeSpan, TimeSpan) CreateReport(SqliteConnection connection)
+        {
+            var sessionList = Read(connection);
+            TimeSpan totalTime = new(0,0,0);
+            foreach (var session in sessionList)
+            {
+                totalTime += TimeSpan.Parse(session.Duration);
+            }
+
+            var avgTimeSeconds = totalTime.TotalSeconds/sessionList.Count;
+            TimeSpan avgTime = new(0, 0, Convert.ToInt32(avgTimeSeconds));
+            return (sessionList.Count, totalTime, avgTime);
+        }
+
+        public void CreateGoal()
+        {
+            
         }
     }
 }

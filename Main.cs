@@ -8,6 +8,8 @@ using System.IO;
 using System.Configuration;
 using System.Collections.Specialized;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 var userInput = new UserInput();
 
@@ -31,7 +33,7 @@ connection.Execute(createTableQuery);
 
 while (end)
 {
-    var panelHeader = new Panel("[blue]Welcome to the Coding Tracker![/]").Padding(38,3,3,3).Expand();
+    var panelHeader = new Panel("[blue]Welcome to the Coding Tracker![/]").Padding(42,3,3,3).Expand();
     
     AnsiConsole.Write(panelHeader);
 
@@ -39,10 +41,10 @@ while (end)
         new SelectionPrompt<string>()
             .Title("[blue]Please, choose an option from the list below:[/]")
             .PageSize(10)
-            .MoreChoicesText("[grey](Move up and down to reveal more fruits)[/]")
+            .MoreChoicesText("[grey](Move up and down to reveal more categories[/]")
             .AddChoices(new[] {
                 "Start a Coding Session.", "Add a Coding Session.", "Change an existed Coding Session.",
-                "Show your Coding Sessions.", "Delete a Coding Session.", "Exit",
+                "Show your Coding Sessions.", "Delete a Coding Session.","Reports", "Goals", "Exit"
                 }));
     // ADD VALIDATION
     switch (fruit)
@@ -71,7 +73,16 @@ while (end)
                 "Wrong data format, try again. Example: 01.01.2001 or T for today's date: ");
             dateChangeInput = UserInput.CheckT(dateChangeInput);
 
-            var sessionTimeInput = userInput.CreateRegex(@"^S|s$|^E|e$", "Type S to change Start Time of Session or type E to change End Time: ","Please, type only listed symbols: ");
+            string sessionTimeInput = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("[blue]Please, choose an option from the list below:[/]")
+                    .PageSize(10)
+                    .MoreChoicesText("[grey](Move up and down to reveal more categories)[/]")
+                    .AddChoices(new[] {
+                        "Change Start Time", "Change End Time"
+                    }));
+
+            
 
             var addSessionList = controller.Read(connection, dateChangeInput);
             if (addSessionList.Count == 0) break;
@@ -79,7 +90,7 @@ while (end)
             var ChangeTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$|^N|n$", "Type your new Coding time: ",
                 "Wrong data format, try again. Example: 10:10:10: ");
 
-            if (sessionTimeInput is "S" or "s")
+            if (sessionTimeInput is "Change Start Time")
             {
                 session.StartTime = DateTime.Parse(dateChangeInput + " " + ChangeTimeInput);
                 controller.Update(connection, session, chooseChangeSession.StartTime.ToLongTimeString(), sessionTimeInput);
@@ -92,7 +103,9 @@ while (end)
 
             break;
         case "Show your Coding Sessions.":
-            controller.Read(connection);
+            var data = controller.Read(connection);
+            foreach (var x in data)
+                Console.WriteLine(@$"Date: {x.Date} Start of Session: {x.StartTime.ToLongTimeString()} End of Session: {x.EndTime.ToLongTimeString()} Total Session Duration: {x.Duration}");
             break;
         case "Delete a Coding Session.":
             var deleteDateInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$", "Type data of your Coding Session you chose to delete or type T for today's date: ",
@@ -103,6 +116,32 @@ while (end)
             if (deleteSessionList.Count == 0) break;
             var chooseDeleteSession = userInput.ChooseSession(deleteSessionList);
             controller.Delete(connection, deleteDateInput, chooseDeleteSession.StartTime.ToLongTimeString());
+            break;
+        case "Reports":
+            var reportData = controller.CreateReport(connection);
+            AnsiConsole.Write(new Columns(
+                new Text($"You have achieved {reportData.Item1} sessions.", new Style(Color.Orange1)),
+                new Text($"Total time you spent coding is {reportData.Item2}", new Style(Color.Orange1)),
+                new Text($"Your average session lasts { reportData.Item3 }", new Style(Color.Orange1))));
+            break;
+        case "Goals":
+            var reportGoalData = controller.CreateReport(connection);
+            Console.Write("What is your desired amount of coding hours in a day: ");
+            var goalInput = userInput.CreateSpecifiedInt(12, "Only reachable amount of time.");
+            var goalHours = reportGoalData.Item3.TotalHours;
+            AnsiConsole.Write(new BarChart()
+                .Width(60)
+                .Label("[green bold underline]Average time per day[/]")
+                .CenterLabel()
+                .AddItem("Your Time", Math.Round(goalHours, 1), Color.Red)
+                .AddItem("Planned Time", Convert.ToDouble(goalInput),Color.Green));
+
+            if (goalHours > goalInput)
+                Console.WriteLine($"You are ahead of plan for {goalHours - goalInput:F1} hours! Congrats!");
+            else
+                Console.WriteLine($"You need {goalInput - goalHours:F1} hours more to achieve your goal! Keep going!");
+                
+            controller.CreateGoal();
             break;
         case "Exit":
             end = false;

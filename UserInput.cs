@@ -11,6 +11,7 @@ namespace CodingTracker.TwilightSaw
     internal class UserInput
     {
         private string input;
+        private int inputInt;
 
         public string Create()
         {
@@ -33,7 +34,6 @@ namespace CodingTracker.TwilightSaw
 
         public int CreateSpecifiedInt(int bound, string message)
         {
-            int inputInt;
             input = Console.ReadLine();
             while (!Int32.TryParse(input, out inputInt))
             {
@@ -63,6 +63,7 @@ namespace CodingTracker.TwilightSaw
            return input;
         }
 
+
         public CodingSession ChooseSession(List<CodingSession> data)
         {
             var chosenSession = AnsiConsole.Prompt(
@@ -71,13 +72,6 @@ namespace CodingTracker.TwilightSaw
                     .PageSize(10)
                     .AddChoices(
                         data));
-            /*List<string> x = new List<string>();
-            for (int i = 0; i < data.Count ; i++)
-            {
-                x.Add((i+1).ToString());
-            }
-            Console.Write("Please, choose desired Coding Session: ");
-            var r = CreateSpecifiedInt(data.Count, "Insert only the number that is allocated for your Coding Session: ");*/
             return chosenSession;
         }
 
