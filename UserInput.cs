@@ -8,6 +8,7 @@ using Spectre.Console;
 
 namespace CodingTracker.TwilightSaw
 {
+    // Validation type class where user input his data and its automatic validated
     internal class UserInput
     {
         private string input;
@@ -15,12 +16,14 @@ namespace CodingTracker.TwilightSaw
 
         public string Create()
         {
+            // Simple user input
             input = Console.ReadLine();
             return input;
         }
 
         public int CreateInt(string message)
         {
+            // User input précised to int 
             int inputInt;
             input = Console.ReadLine();
             while (!Int32.TryParse(input, out inputInt))
@@ -34,6 +37,7 @@ namespace CodingTracker.TwilightSaw
 
         public int CreateSpecifiedInt(int bound, string message)
         {
+            // User input précised to a range of int
             input = Console.ReadLine();
             while (!Int32.TryParse(input, out inputInt))
             {
@@ -50,6 +54,7 @@ namespace CodingTracker.TwilightSaw
 
         public string CreateRegex(string regexString, string messageStart, string messageError)
         {
+            // User input précised to a certain combinations of symbols
             Regex regex = new Regex(regexString);
             var input = AnsiConsole.Prompt(
                 new TextPrompt<string>($"[green]{messageStart}[/]")
@@ -66,6 +71,7 @@ namespace CodingTracker.TwilightSaw
 
         public CodingSession ChooseSession(List<CodingSession> data)
         {
+            // Specialized method to process list of session and choose one
             var chosenSession = AnsiConsole.Prompt(
                 new SelectionPrompt<CodingSession>()
                     .Title("[blue]Please, choose an option from the list below:[/]")
@@ -75,7 +81,7 @@ namespace CodingTracker.TwilightSaw
             return chosenSession;
         }
 
-        
+        // Specialized method to check if certain symbols are chosen
         public static string CheckT(string dateInput)
         {
             return dateInput is "T" or "t" ? DateTime.Now.ToShortDateString() : dateInput;

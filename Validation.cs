@@ -4,6 +4,7 @@ namespace CodingTracker.TwilightSaw;
 
 public class Validation
 {
+    // Validation type class where different controller methods are checked for exceptions
     public Exception? CheckExecute(Action action)
     {
         try

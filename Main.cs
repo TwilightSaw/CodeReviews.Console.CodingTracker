@@ -1,18 +1,12 @@
-﻿using CodingTracker.TwilightSaw;
+﻿using System.Configuration;
+using CodingTracker.TwilightSaw;
 using Dapper;
 using Microsoft.Data.Sqlite;
 using Spectre.Console;
 using SQLitePCL;
-using System.IO;
 
-using System.Configuration;
-using System.Collections.Specialized;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-
+// Initialize start components
 var userInput = new UserInput();
-
 var end = true;
 
 raw.SetProvider(new SQLite3Provider_e_sqlite3());
@@ -22,45 +16,43 @@ connection.Open();
 var session = new CodingSession();
 var controller = new TrackerController(connection);
 
-var createTableQuery = @"CREATE TABLE IF NOT EXISTS 'Tracker' (
-    Id INTEGER PRIMARY KEY,
-    Date TEXT,
-    StartTime TEXT,
-    EndTime TEXT
-    )";
+// Create a new table if current is not existed
+controller.Start(connection);
 
-connection.Execute(createTableQuery);
-
+// Start a main menu loop
 while (end)
 {
-    var panelHeader = new Panel("[blue]Welcome to the Coding Tracker![/]").Padding(42,3,3,3).Expand();
-    
+    var panelHeader = new Panel("[blue]Welcome to the Coding Tracker![/]").Padding(42, 3, 3, 3).Expand();
+
     AnsiConsole.Write(panelHeader);
 
-    string fruit = AnsiConsole.Prompt(
+    // Initialize menu choice
+    var input = AnsiConsole.Prompt(
         new SelectionPrompt<string>()
             .Title("[blue]Please, choose an option from the list below:[/]")
             .PageSize(10)
             .MoreChoicesText("[grey](Move up and down to reveal more categories[/]")
-            .AddChoices(new[] {
-                "Start a Coding Session.", "Add a Coding Session.", "Change an existed Coding Session.",
-                "Show your Coding Sessions.", "Delete a Coding Session.","Reports", "Goals", "Exit"
-                }));
-    // ADD VALIDATION
-    switch (fruit)
+            .AddChoices("Start a Coding Session.", "Add a Coding Session.", "Change an existed Coding Session.",
+                "Show your Coding Sessions.", "Delete a Coding Session.", "Reports", "Goals", "Exit"));
+    switch (input)
     {
         case "Start a Coding Session.":
+            // Create a live stopwatch session
             controller.CreateWithTimer(connection, session);
             break;
         case "Add a Coding Session.":
-            var dateAddInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$", "Type date of your Coding Session or type T for today's date: "
-                ,"Wrong data format, try again. Example: 01.01.2001 or T for today's date: ");
+            // Add a new coding session from scratch
+            var dateAddInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$",
+                "Type date of your Coding Session or type T for today's date: "
+                , "Wrong data format, try again. Example: 01.01.2001 or T for today's date: ");
             dateAddInput = UserInput.CheckT(dateAddInput);
 
-            var startAddTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$", "Type your Coding Session start time: "
+            var startAddTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$",
+                "Type your Coding Session start time: "
                 , "Wrong data format, try again. Example: 10:10:10: ");
 
-            var endAddTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$|^N|n$", "Add end time of your Coding Session or type N for the time at this moment: "
+            var endAddTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$|^N|n$",
+                "Add end time of your Coding Session or type N for the time at this moment: "
                 , "Wrong data format, try again. Example: 12:12:12 or N for the time at this moment: ");
 
             endAddTimeInput = UserInput.CheckN(endAddTimeInput);
@@ -69,46 +61,59 @@ while (end)
             controller.Create(connection, session);
             break;
         case "Change an existed Coding Session.":
-            var dateChangeInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$", "Type date of your Coding Session or type T for today's date: ",
+            // Change a Start or End time of already existed session
+            var dateChangeInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$",
+                "Type date of your Coding Session or type T for today's date: ",
                 "Wrong data format, try again. Example: 01.01.2001 or T for today's date: ");
             dateChangeInput = UserInput.CheckT(dateChangeInput);
 
-            string sessionTimeInput = AnsiConsole.Prompt(
+            // Choice of Start or End time
+            var sessionTimeInput = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("[blue]Please, choose an option from the list below:[/]")
                     .PageSize(10)
                     .MoreChoicesText("[grey](Move up and down to reveal more categories)[/]")
-                    .AddChoices(new[] {
-                        "Change Start Time", "Change End Time"
-                    }));
+                    .AddChoices("Change Start Time", "Change End Time"));
 
-            
-
+            // Get a list of chosen sessions by date
             var addSessionList = controller.Read(connection, dateChangeInput);
             if (addSessionList.Count == 0) break;
             var chooseChangeSession = userInput.ChooseSession(addSessionList);
-            var ChangeTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$|^N|n$", "Type your new Coding time: ",
+            var ChangeTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$|^N|n$",
+                "Type your new Coding time: ",
                 "Wrong data format, try again. Example: 10:10:10: ");
 
+            // Redirect action based on previous choice of time
             if (sessionTimeInput is "Change Start Time")
             {
                 session.StartTime = DateTime.Parse(dateChangeInput + " " + ChangeTimeInput);
-                controller.Update(connection, session, chooseChangeSession.StartTime.ToLongTimeString(), sessionTimeInput);
+                controller.Update(connection, session, chooseChangeSession.StartTime.ToLongTimeString(),
+                    sessionTimeInput);
             }
             else
             {
                 session.EndTime = DateTime.Parse(dateChangeInput + " " + ChangeTimeInput);
-                controller.Update(connection, session, chooseChangeSession.EndTime.ToLongTimeString(), sessionTimeInput);
+                controller.Update(connection, session, chooseChangeSession.EndTime.ToLongTimeString(),
+                    sessionTimeInput);
             }
-
             break;
         case "Show your Coding Sessions.":
+            // Show a table of all sessions
             var data = controller.Read(connection);
+            var table = new Table();
+            table.AddColumn("Date")
+                .AddColumn("Start of Session")
+                .AddColumn("End of Session")
+                .AddColumn("Total Session Duration").Centered();
             foreach (var x in data)
-                Console.WriteLine(@$"Date: {x.Date} Start of Session: {x.StartTime.ToLongTimeString()} End of Session: {x.EndTime.ToLongTimeString()} Total Session Duration: {x.Duration}");
+                table.AddRow(@$"{x.Date}", $"{x.StartTime.ToLongTimeString()}", $"{x.EndTime.ToLongTimeString()}",
+                    $"{x.Duration}");
+            AnsiConsole.Write(table);
             break;
         case "Delete a Coding Session.":
-            var deleteDateInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$", "Type data of your Coding Session you chose to delete or type T for today's date: ",
+            // Delete a chosen session selected by date and then by time
+            var deleteDateInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$",
+                "Type data of your Coding Session you chose to delete or type T for today's date: ",
                 "Wrong data format, try again. Example: 01.01.2001 or T for today's date: ");
             deleteDateInput = UserInput.CheckT(deleteDateInput);
 
@@ -118,13 +123,15 @@ while (end)
             controller.Delete(connection, deleteDateInput, chooseDeleteSession.StartTime.ToLongTimeString());
             break;
         case "Reports":
+            // Show a simple report of main data
             var reportData = controller.CreateReport(connection);
             AnsiConsole.Write(new Columns(
                 new Text($"You have achieved {reportData.Item1} sessions.", new Style(Color.Orange1)),
                 new Text($"Total time you spent coding is {reportData.Item2}", new Style(Color.Orange1)),
-                new Text($"Your average session lasts { reportData.Item3 }", new Style(Color.Orange1))));
+                new Text($"Your average session lasts {reportData.Item3}", new Style(Color.Orange1))));
             break;
         case "Goals":
+            // Read a user goal of desired amount of hours per day and show his completion
             var reportGoalData = controller.CreateReport(connection);
             Console.Write("What is your desired amount of coding hours in a day: ");
             var goalInput = userInput.CreateSpecifiedInt(12, "Only reachable amount of time.");
@@ -134,16 +141,15 @@ while (end)
                 .Label("[green bold underline]Average time per day[/]")
                 .CenterLabel()
                 .AddItem("Your Time", Math.Round(goalHours, 1), Color.Red)
-                .AddItem("Planned Time", Convert.ToDouble(goalInput),Color.Green));
+                .AddItem("Planned Time", Convert.ToDouble(goalInput), Color.Green));
 
             if (goalHours > goalInput)
                 Console.WriteLine($"You are ahead of plan for {goalHours - goalInput:F1} hours! Congrats!");
             else
                 Console.WriteLine($"You need {goalInput - goalHours:F1} hours more to achieve your goal! Keep going!");
-                
-            controller.CreateGoal();
             break;
         case "Exit":
+            // Exit from application
             end = false;
             break;
         default:
