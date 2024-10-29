@@ -78,7 +78,7 @@ while (end)
             // Get a list of chosen sessions by date
             var addSessionList = controller.Read(connection, dateChangeInput);
             if (addSessionList.Count == 0) break;
-            var chooseChangeSession = userInput.ChooseSession(addSessionList);
+            var chooseChangeSession = UserInput.ChooseSession(addSessionList);
             var ChangeTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$|^N|n$",
                 "Type your new Coding time: ",
                 "Wrong data format, try again. Example: 10:10:10: ");
@@ -119,7 +119,7 @@ while (end)
 
             var deleteSessionList = controller.Read(connection, deleteDateInput);
             if (deleteSessionList.Count == 0) break;
-            var chooseDeleteSession = userInput.ChooseSession(deleteSessionList);
+            var chooseDeleteSession = UserInput.ChooseSession(deleteSessionList);
             controller.Delete(connection, deleteDateInput, chooseDeleteSession.StartTime.ToLongTimeString());
             break;
         case "Reports":

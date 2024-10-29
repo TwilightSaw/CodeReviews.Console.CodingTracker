@@ -69,7 +69,7 @@ namespace CodingTracker.TwilightSaw
         }
 
 
-        public CodingSession ChooseSession(List<CodingSession> data)
+        public static CodingSession ChooseSession(List<CodingSession> data)
         {
             // Specialized method to process list of session and choose one
             var chosenSession = AnsiConsole.Prompt(

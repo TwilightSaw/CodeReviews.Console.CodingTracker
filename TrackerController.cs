@@ -11,6 +11,7 @@ using Microsoft.Data.Sqlite;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Object = System.Object;
 using System.Security.AccessControl;
+using Spectre.Console;
 
 // Main Controller class
 namespace CodingTracker.TwilightSaw
@@ -113,7 +114,7 @@ namespace CodingTracker.TwilightSaw
             var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from [{Name}] 
                                     WHERE Date = @Date";
             List<CodingSession> data = connection.Query<CodingSession>(selectTableQuery, new {Date = date}).ToList();
-            validation.CheckRead(() => Console.WriteLine($"Date: {data[0].Date} "), "Date is not existed.");
+            validation.CheckRead(() => Console.WriteLine($"Date: {data[0].Date} "), "Date does not exist.");
             return data;
         }
 
@@ -122,7 +123,8 @@ namespace CodingTracker.TwilightSaw
             // Method from CRUD specification that updates an existed session with a new Start or End time
             if (time is "Change Start Time")
             {
-                var selectTableDateQuery = @$"SELECT Date, EndTime from [{Name}]
+
+                    var selectTableDateQuery = @$"SELECT Date, EndTime from [{Name}]
                                    WHERE Date = @Date AND StartTime = @PreviousTime";
 
                 CodingSession r = connection.QuerySingleOrDefault<CodingSession>(selectTableDateQuery, new
@@ -131,16 +133,26 @@ namespace CodingTracker.TwilightSaw
                     PreviousTime = previousTime
                 });
                 session.EndTime = DateTime.Parse(r.Date + " " + r.EndTime.ToLongTimeString());
-                var insertTableQuery = $@"UPDATE [{Name}] 
+                session.Date = session.StartTime.Date.ToShortDateString();
+                if (CheckCrossingUpdate(connection, session, previousTime))
+                {
+                    var insertTableQuery = $@"UPDATE [{Name}] 
         SET StartTime = @StartTime, Duration = @Duration
         Where Date = @Date AND StartTime = @PreviousTime";
-                validation.CheckExecute(() => connection.Execute(insertTableQuery, new
+                    validation.CheckExecute(() => connection.Execute(insertTableQuery, new
+                    {
+                        Date = session.GetStartTime().Date.ToShortDateString(),
+                        StartTime = session.StartTime.ToLongTimeString(),
+                        PreviousTime = previousTime,
+                        Duration = session.CalculateDuration()
+                    }));
+                }
+                else
                 {
-                    Date = session.GetStartTime().Date.ToShortDateString(),
-                    StartTime = session.StartTime.ToLongTimeString(),
-                    PreviousTime = previousTime,
-                    Duration = session.CalculateDuration()
-                }));
+                    AnsiConsole.Write(new Rows(
+                        new Text("Your session is crossing another sessions.", new Style(Color.Red))));
+                }
+               
             }
             else
             {
@@ -152,8 +164,11 @@ namespace CodingTracker.TwilightSaw
                     Date = session.EndTime.Date.ToShortDateString(),
                     PreviousTime = previousTime
                 });
-                validation.CheckExecute(() => session.StartTime = DateTime.Parse(r.Date + " " + r.GetStartTime()));
-                var insertTableQuery = $@"UPDATE [{Name}] 
+                validation.CheckExecute(() => session.StartTime = DateTime.Parse(r.Date + " " + r.GetStartTime().ToLongTimeString()));
+                session.Date = session.EndTime.Date.ToShortDateString();
+                if (CheckCrossingUpdate(connection, session, previousTime))
+                {
+                    var insertTableQuery = $@"UPDATE [{Name}] 
         SET EndTime = @EndTime, Duration = @Duration
         Where Date = @Date AND EndTime = @PreviousTime";
                 connection.Execute(insertTableQuery, new
@@ -163,6 +178,12 @@ namespace CodingTracker.TwilightSaw
                     PreviousTime = previousTime,
                     Duration = session.CalculateDuration()
                 });
+                }
+                else
+                {
+                    AnsiConsole.Write(new Rows(
+                        new Text("Your session is crossing another sessions.", new Style(Color.Red))));
+                }
             }
             
         }
@@ -222,6 +243,33 @@ namespace CodingTracker.TwilightSaw
     )";
 
             connection.Execute(createTableQuery);
+        }
+
+        public bool CheckCrossingUpdate(SqliteConnection connection, CodingSession session, string previousTime)
+        {
+            var sessionStartTime = TimeSpan.Parse(session.StartTime.ToLongTimeString());
+            var sessionEndTime = TimeSpan.Parse(session.EndTime.ToLongTimeString());
+            
+            var list = Read(connection, session.Date);
+            list.RemoveAll(t => t.StartTime.ToLongTimeString() == previousTime);
+            var sortedList = list.OrderBy((t) => TimeSpan.Parse(t.StartTime.ToLongTimeString())).ToList() ;
+
+            if (sessionStartTime < TimeSpan.Parse(sortedList[0].StartTime.ToLongTimeString()) &&
+                sessionEndTime < TimeSpan.Parse(sortedList[0].StartTime.ToLongTimeString()))
+                return true;
+
+            for (int i = 1; i < sortedList.Count-1; i++)
+            {
+                var currentListSession = sortedList[i-1];
+                var nextListSession = sortedList[i];
+                if (sessionStartTime > TimeSpan.Parse(currentListSession.EndTime.ToLongTimeString()) &&
+                    sessionEndTime < TimeSpan.Parse(nextListSession.StartTime.ToLongTimeString()))
+                    return true;
+            }
+            if(sessionStartTime > TimeSpan.Parse(sortedList[0].EndTime.ToLongTimeString()) &&
+              sessionEndTime > TimeSpan.Parse(sortedList[0].EndTime.ToLongTimeString()))
+            return true;
+            return false;
         }
     }
 }
