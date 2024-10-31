@@ -26,16 +26,16 @@ Console based CRUD application to track people habits. Developed using C# and SQ
   - If no database exists, or the correct table does not exist they will be created on program start.
 
 * A console based UI where users can navigate by user input.
-  - ![image](https://github.com/TwilightSaw/CodeReviews.Console.CodingTracker/blob/main/images/UI.jpg?raw=true)
+   ![image](https://github.com/TwilightSaw/CodeReviews.Console.CodingTracker/blob/main/images/UI.jpg?raw=true)
   
 * CRUD DB functions
   - From the main menu users can Create, Read, Update or Delete entries for whichever date and time they want, entered in dd.mm.yyyy and hh:mm:ss format.
 
 * Reports of total session amount, hours and average amount of time per session.
-  - ![image](https://github.com/TwilightSaw/CodeReviews.Console.CodingTracker/blob/main/images/report.png?raw=true)
+   ![image](https://github.com/TwilightSaw/CodeReviews.Console.CodingTracker/blob/main/images/report.png?raw=true)
     
 * Goal report, where user can define his everyday time of coding and check if he succeed or not with progress bar.
-  - ![image](https://github.com/TwilightSaw/CodeReviews.Console.CodingTracker/blob/main/images/goal_report.jpg?raw=true)
+   ![image](https://github.com/TwilightSaw/CodeReviews.Console.CodingTracker/blob/main/images/goal_report.jpg?raw=true)
 
 ## Challenges
 - Validation of time is hard enough process, especially if you add timer to this. Parsing to DateTime, string and TimeSpan in a circle can be firstly challenging.

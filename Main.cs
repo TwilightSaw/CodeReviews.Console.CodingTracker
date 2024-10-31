@@ -32,7 +32,7 @@ while (end)
             break;
         case "Add a Coding Session.":
             var dateAddInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$",
-                "Type date of your Coding Session or type T for today's date: "
+                "Type the date of your Coding Session or type T for today's date: "
                 , "Wrong data format, try again. Example: 01.01.2001 or T for today's date: ");
             dateAddInput = UserInput.CheckT(dateAddInput);
 
@@ -51,7 +51,7 @@ while (end)
             break;
         case "Change an existed Coding Session.":
             var dateChangeInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$",
-                "Type date of your Coding Session or type T for today's date: ",
+                "Type the date of your Coding Session or type T for today's date: ",
                 "Wrong data format, try again. Example: 01.01.2001 or T for today's date: ");
             dateChangeInput = UserInput.CheckT(dateChangeInput);
 
@@ -84,20 +84,61 @@ while (end)
             break;
         case "Show your Coding Sessions.":
             var data = controller.Read(connection);
-            var table = new Table();
-            table.AddColumn("Date")
-                .AddColumn("Start of Session")
-                .AddColumn("End of Session")
-                .AddColumn("Total Session Duration").Centered();
+            var endRead = true;
+            while(endRead){
+                var table = new Table();
+                table.AddColumn("Date")
+                    .AddColumn("Start of Session")
+                    .AddColumn("End of Session")
+                    .AddColumn("Total Session Duration").Centered();
+                foreach (var x in data)
+                    table.AddRow(@$"{x.Date}", $"{x.StartTime.ToLongTimeString()}", $"{x.EndTime.ToLongTimeString()}",
+                        $"{x.Duration}");
+                AnsiConsole.Write(table);
 
-            foreach (var x in data)
-                table.AddRow(@$"{x.Date}", $"{x.StartTime.ToLongTimeString()}", $"{x.EndTime.ToLongTimeString()}",
-                    $"{x.Duration}");
-            AnsiConsole.Write(table);
+                var inputFilter = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("[blue]Please, choose an option from the list below:[/]")
+                        .PageSize(10)
+                        .MoreChoicesText("[grey](Move up and down to reveal more categories[/]")
+                        .AddChoices("Filter per year", "Filter per month", "Filter per day", "Sort", "Exit"));
+                switch (inputFilter)
+                {
+                    case "Filter per year":
+                        var yearInput = userInput.CreateRegex(@"^(\d{4})$", "Insert desired year: ", "Wrong symbols.");
+                        data = controller.ReadBy(connection, yearInput);
+                        Console.Clear();
+                        break;
+                    case "Filter per month":
+                        var monthInput = userInput.CreateRegex(@"^(0[1-9]|1[0-2])\.(\d{4})$", "Insert desired mm.year: ", "Wrong symbols.");
+                        data = controller.ReadBy(connection, monthInput);
+                        Console.Clear();
+                        break;
+                    case "Filter per day":
+                        //NOT SORTING ASCENDING BY TIME
+                        var dayInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$", "Insert desired dd.mm.year: ", "Wrong symbols.");
+                        data = controller.ReadBy(connection, dayInput);
+                        Console.Clear();
+                        break;
+                    case "Sort":
+                        var inputOrder = AnsiConsole.Prompt(
+                            new SelectionPrompt<string>()
+                                .Title("[blue]Please, choose an option from the list below:[/]")
+                                .PageSize(10)
+                                .MoreChoicesText("[grey](Move up and down to reveal more categories[/]")
+                                .AddChoices("Descending", "Ascending"));
+                        data = controller.Order(connection, data, inputOrder == "Ascending");
+                        Console.Clear();
+                        break;
+                    case "Exit":
+                        endRead = false;
+                        break;
+                }
+            }
             break;
         case "Delete a Coding Session.":
             var deleteDateInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$|^T|t$",
-                "Type data of your Coding Session you chose to delete or type T for today's date: ",
+                "Type the data of your Coding Session you chose to delete or type T for today's date: ",
                 "Wrong data format, try again. Example: 01.01.2001 or T for today's date: ");
             deleteDateInput = UserInput.CheckT(deleteDateInput);
 
