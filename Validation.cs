@@ -4,7 +4,7 @@ namespace CodingTracker.TwilightSaw;
 
 public class Validation
 {
-    public Exception? CheckExecute(Action action)
+    public bool IsExecutable(Action action)
     {
         try
         {
@@ -13,9 +13,9 @@ public class Validation
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
-            return e;
+            return false;
         }
-        return null;
+        return true;
     }
 
     public Exception? CheckWithMessage(Action action, string message)

@@ -29,7 +29,7 @@ internal class TrackerController
 
     public void Create(SqliteConnection connection, CodingSession session)
     {
-        var insertTableQuery = $@"INSERT INTO [{TableName}] (
+        var insertTableQuery = $@"INSERT INTO '{TableName}' (
             Id,
             Date,
             StartTime,
@@ -37,7 +37,7 @@ internal class TrackerController
             Duration
         )
         VALUES (
-            (SELECT MAX(Id) + 1 FROM [{TableName}]),  
+            (SELECT MAX(Id) + 1 FROM '{TableName}'),  
             @Date,                         
             @StartTime,
             @EndTime,
@@ -46,13 +46,19 @@ internal class TrackerController
 
         session.Date = session.StartTime.Date.ToShortDateString();
         if (IsAvailable(connection, session, null))
-            _validation.CheckExecute(() => connection.Execute(insertTableQuery, new
+        {
+            var checkValidation = _validation.IsExecutable(() => connection.Execute(insertTableQuery, new
             {
                 session.Date,
                 StartTime = session.GetStartTime().ToLongTimeString(),
                 EndTime = session.EndTime.ToLongTimeString(),
                 Duration = session.CalculateDuration()
             }));
+            AnsiConsole.Write(checkValidation
+                ? new Rows(new Text("Added successfully", new Style(Color.LightGreen)))
+                : new Rows(new Text("Failed to add", new Style(Color.Red))));
+
+        }
         else
             AnsiConsole.Write(new Rows(
                 new Text("Your session is crossing another sessions.", new Style(Color.Red))));
@@ -93,17 +99,17 @@ internal class TrackerController
 
     public List<CodingSession> Read(SqliteConnection connection)
     {
-        var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from [{TableName}]";
+        var selectTableQuery = $"SELECT Id, Date, StartTime, EndTime, Duration from '{TableName}'";
         var data = connection.Query<CodingSession>(selectTableQuery).ToList();
         return data;
     }
 
     public List<CodingSession> ReadBy(SqliteConnection connection, string date)
     {
-        var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from [{TableName}] 
+        var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from '{TableName}' 
                                     WHERE Date LIKE '%{date}%'";
         var data = connection.Query<CodingSession>(selectTableQuery, new { Date = date }).ToList();
-        _validation.CheckWithMessage(() => Console.WriteLine($"Date: {data[0].Date} "), "Date does not exist.");
+        _validation.CheckWithMessage(() => DateTime.Parse(data[0].Date), "Empty date.");
         return data;
     }
 
@@ -111,7 +117,7 @@ internal class TrackerController
     {
         if (time is "Change Start Time")
         {
-            var selectTableDateQuery = @$"SELECT Date, EndTime from [{TableName}]
+            var selectTableDateQuery = @$"SELECT Date, EndTime from '{TableName}'
                                    WHERE Date = @Date AND StartTime = @PreviousTime";
             var selectedSession = connection.QuerySingleOrDefault<CodingSession>(selectTableDateQuery, new
             {
@@ -126,13 +132,17 @@ internal class TrackerController
                 var insertTableQuery = $@"UPDATE [{TableName}] 
                                 SET StartTime = @StartTime, Duration = @Duration
                                 Where Date = @Date AND StartTime = @PreviousTime";
-                _validation.CheckExecute(() => connection.Execute(insertTableQuery, new
+
+                var checkValidation = _validation.IsExecutable(() => connection.Execute(insertTableQuery, new
                 {
                     Date = session.GetStartTime().Date.ToShortDateString(),
                     StartTime = session.StartTime.ToLongTimeString(),
                     PreviousTime = previousTime,
                     Duration = session.CalculateDuration()
                 }));
+                AnsiConsole.Write(checkValidation
+                    ? new Rows(new Text("Changed successfully", new Style(Color.LightGreen)))
+                    : new Rows(new Text("Failed to add", new Style(Color.Red))));
             }
             else
             {
@@ -142,30 +152,32 @@ internal class TrackerController
         }
         else
         {
-            var selectTableDateQuery = @$"SELECT Date, StartTime, EndTime from [{TableName}]
+            var selectTableDateQuery = @$"SELECT Date, StartTime, EndTime from '{TableName}'
                                    WHERE Date = @Date AND EndTime = @PreviousTime";
             var selectedSession = connection.QuerySingleOrDefault<CodingSession>(selectTableDateQuery, new
             {
                 Date = session.EndTime.Date.ToShortDateString(),
                 PreviousTime = previousTime
             });
-            _validation.CheckExecute(() =>
-                session.StartTime =
-                    DateTime.Parse(selectedSession.Date + " " + selectedSession.GetStartTime().ToLongTimeString()));
-
+            session.StartTime = DateTime.Parse(selectedSession.Date + " " + selectedSession.GetStartTime().ToLongTimeString());
             session.Date = session.EndTime.Date.ToShortDateString();
+
+            if (!_validation.IsExecutable(() => session.GetStartTime())) return;
             if (IsAvailable(connection, session, session.StartTime.ToLongTimeString()))
             {
-                var insertTableQuery = $@"UPDATE [{TableName}] 
+                var insertTableQuery = $@"UPDATE '{TableName}' 
                             SET EndTime = @EndTime, Duration = @Duration
                             Where Date = @Date AND EndTime = @PreviousTime";
-                connection.Execute(insertTableQuery, new
+                var checkValidation = _validation.IsExecutable(() => connection.Execute(insertTableQuery, new
                 {
                     session.Date,
                     EndTime = session.EndTime.ToLongTimeString(),
                     PreviousTime = previousTime,
                     Duration = session.CalculateDuration()
-                });
+                }));
+                AnsiConsole.Write(checkValidation
+                    ? new Rows(new Text("Changed successfully", new Style(Color.LightGreen)))
+                    : new Rows(new Text("Failed to add", new Style(Color.Red))));
             }
             else
             {
@@ -177,7 +189,7 @@ internal class TrackerController
 
     public void Delete(SqliteConnection connection, string date, string previousTime)
     {
-        var deleteTableQuery = $@"DELETE FROM [{TableName}]
+        var deleteTableQuery = $@"DELETE FROM '{TableName}'
                 WHERE Date = @Date AND StartTime = @PreviousTime";
         connection.Execute(deleteTableQuery, new { Date = date, PreviousTime = previousTime });
     }
@@ -221,7 +233,6 @@ internal class TrackerController
         var sessionEndTime = TimeSpan.Parse(session.EndTime.ToLongTimeString());
 
         var list = ReadBy(connection, session.Date);
-        //FIX
         if (list.Count != 0)
         {
             list.RemoveAll(t => t.StartTime.ToLongTimeString() == previousTime);
