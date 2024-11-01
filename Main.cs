@@ -62,7 +62,7 @@ while (end)
                     .MoreChoicesText("[grey](Move up and down to reveal more categories)[/]")
                     .AddChoices("Change Start Time", "Change End Time"));
 
-            var addSessionList = controller.ReadOneDate(connection, dateChangeInput);
+            var addSessionList = controller.ReadBy(connection, dateChangeInput);
             if (addSessionList.Count == 0) break;
             var chooseChangeSession = UserInput.ChooseSession(addSessionList);
             var changeTimeInput = userInput.CreateRegex(@"^([0-1][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])$|^N|n$",
@@ -142,7 +142,7 @@ while (end)
                 "Wrong data format, try again. Example: 01.01.2001 or T for today's date: ");
             deleteDateInput = UserInput.CheckT(deleteDateInput);
 
-            var deleteSessionList = controller.ReadOneDate(connection, deleteDateInput);
+            var deleteSessionList = controller.ReadBy(connection, deleteDateInput);
             if (deleteSessionList.Count == 0) break;
             var chooseDeleteSession = UserInput.ChooseSession(deleteSessionList);
 

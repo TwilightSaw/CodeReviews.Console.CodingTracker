@@ -95,12 +95,13 @@ namespace CodingTracker.TwilightSaw
             List<CodingSession> data = connection.Query<CodingSession>(selectTableQuery).ToList();
             return data;
         }
-        //DELETE?
-        public List<CodingSession> ReadOneDate(SqliteConnection connection, string date)
+        //DELETE? 
+       
+        public List<CodingSession> ReadBy(SqliteConnection connection, string date)
         {
             var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from [{TableName}] 
-                                    WHERE Date = @Date";
-            List<CodingSession> data = connection.Query<CodingSession>(selectTableQuery, new {Date = date}).ToList();
+                                    WHERE Date LIKE '%{date}%'";
+            List<CodingSession> data = connection.Query<CodingSession>(selectTableQuery, new { Date = date }).ToList();
             _validation.CheckWithMessage(() => Console.WriteLine($"Date: {data[0].Date} "), "Date does not exist.");
             return data;
         }
@@ -211,46 +212,50 @@ namespace CodingTracker.TwilightSaw
             var sessionStartTime = TimeSpan.Parse(session.StartTime.ToLongTimeString());
             var sessionEndTime = TimeSpan.Parse(session.EndTime.ToLongTimeString());
             
-            var list = ReadOneDate(connection, session.Date);
+            var list = ReadBy(connection, session.Date);
             //FIX
-            if (list.Count == 0) return false;
-            list.RemoveAll(t => t.StartTime.ToLongTimeString() == previousTime);
-            var sortedList = list.OrderBy((t) => TimeSpan.Parse(t.StartTime.ToLongTimeString())).ToList() ;
-
-            if (sessionStartTime < TimeSpan.Parse(sortedList[0].StartTime.ToLongTimeString()) &&
-                sessionEndTime < TimeSpan.Parse(sortedList[0].StartTime.ToLongTimeString()))
-                return true;
-
-            for (int i = 1; i <= sortedList.Count-1; i++)
+            if (list.Count != 0)
             {
-                var currentListSession = sortedList[i-1];
-                var nextListSession = sortedList[i];
-                if (sessionStartTime > TimeSpan.Parse(currentListSession.EndTime.ToLongTimeString()) &&
-                    sessionEndTime < TimeSpan.Parse(nextListSession.StartTime.ToLongTimeString()))
+                list.RemoveAll(t => t.StartTime.ToLongTimeString() == previousTime);
+                var sortedList = list.OrderBy((t) => TimeSpan.Parse(t.StartTime.ToLongTimeString())).ToList();
+                try
+                {
+                    var checkListNullSession = sortedList[0];
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    return true;
+                }
+                if (sessionStartTime < TimeSpan.Parse(sortedList[0].StartTime.ToLongTimeString()) &&
+                    sessionEndTime < TimeSpan.Parse(sortedList[0].StartTime.ToLongTimeString()))
+                    return true;
+
+                for (int i = 1; i <= sortedList.Count - 1; i++)
+                {
+                    var currentListSession = sortedList[i - 1];
+                    var nextListSession = sortedList[i];
+                    if (sessionStartTime > TimeSpan.Parse(currentListSession.EndTime.ToLongTimeString()) &&
+                        sessionEndTime < TimeSpan.Parse(nextListSession.StartTime.ToLongTimeString()))
+                        return true;
+                }
+
+                if (sessionStartTime > TimeSpan.Parse(sortedList[^1].EndTime.ToLongTimeString()) &&
+                    sessionEndTime > TimeSpan.Parse(sortedList[^1].EndTime.ToLongTimeString()))
                     return true;
             }
-
-            if(sessionStartTime > TimeSpan.Parse(sortedList[^1].EndTime.ToLongTimeString()) &&
-              sessionEndTime > TimeSpan.Parse(sortedList[^1].EndTime.ToLongTimeString()))
+            else
                 return true;
             return false;
         }
 
         public List<CodingSession> Order(SqliteConnection connection, List<CodingSession> sessions, bool isOrderAscending)
         {
-            var sortedSessions = sessions.OrderBy((t) => t.Date).ThenBy(t => TimeSpan.Parse(t.StartTime.ToLongTimeString())).ToList();
-            var sortedSessionsReversed = sessions.OrderByDescending((t) => t.Date)
+            var sortedSessions = sessions.OrderBy((t) => DateTime.Parse(t.Date)).ThenBy(t => TimeSpan.Parse(t.StartTime.ToLongTimeString())).ToList();
+            var sortedSessionsReversed = sessions.OrderByDescending((t) => DateTime.Parse(t.Date))
                 .ThenBy(t => TimeSpan.Parse(t.StartTime.ToLongTimeString())).ToList();
            return isOrderAscending ? sortedSessionsReversed : sortedSessions;
         }
 
-        public List<CodingSession> ReadBy(SqliteConnection connection, string date)
-        {
-            var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from [{TableName}] 
-                                    WHERE Date LIKE '%{date}%'";
-            List<CodingSession> data = connection.Query<CodingSession>(selectTableQuery, new { Date = date }).ToList();
-            _validation.CheckWithMessage(() => Console.WriteLine($"Date: {data[0].Date} "), "Date does not exist.");
-            return data;
-        }
+        
     }
 }

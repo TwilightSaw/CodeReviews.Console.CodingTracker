@@ -37,6 +37,9 @@ Console based CRUD application to track people habits. Developed using C# and SQ
 * Goal report, where user can define his everyday time of coding and check if he succeed or not with progress bar.
    ![image](https://github.com/TwilightSaw/CodeReviews.Console.CodingTracker/blob/main/images/goal_report.jpg?raw=true)
 
+* Check records that had been already created, filter and order ascending or descending.
+   ![image](https://github.com/TwilightSaw/CodeReviews.Console.CodingTracker/blob/main/images/filter.png?raw=true)
+
 ## Challenges
 - Validation of time is hard enough process, especially if you add timer to this. Parsing to DateTime, string and TimeSpan in a circle can be firstly challenging.
 - Creating your first config file was a little confusing, but managable.
