@@ -28,7 +28,7 @@ namespace CodingTracker.TwilightSaw
         }
         public void Create(SqliteConnection connection, CodingSession session)
         {
-            var insertTableQuery = $@"INSERT INTO [{TableName}] (
+            var insertTableQuery = $@"INSERT INTO  [{TableName} ] (
             Id,
             Date,
             StartTime,
@@ -36,7 +36,7 @@ namespace CodingTracker.TwilightSaw
             Duration
         )
         VALUES (
-            (SELECT MAX(Id) + 1 FROM [{TableName}]),  
+            (SELECT MAX(Id) + 1 FROM  [{TableName}]),  
             @Date,                         
             @StartTime,
             @EndTime,
@@ -91,7 +91,7 @@ namespace CodingTracker.TwilightSaw
 
         public List<CodingSession> Read(SqliteConnection connection)
         {
-            var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from [{TableName}]";
+            var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from  [{TableName}]";
             List<CodingSession> data = connection.Query<CodingSession>(selectTableQuery).ToList();
             return data;
         }
@@ -110,7 +110,7 @@ namespace CodingTracker.TwilightSaw
         {
             if (time is "Change Start Time")
             {
-                    var selectTableDateQuery = @$"SELECT Date, EndTime from [{TableName}]
+                    var selectTableDateQuery = @$"SELECT Date, EndTime from  [{TableName}]
                                    WHERE Date = @Date AND StartTime = @PreviousTime";
                 CodingSession selectedSession = connection.QuerySingleOrDefault<CodingSession>(selectTableDateQuery, new
                 {
@@ -122,7 +122,7 @@ namespace CodingTracker.TwilightSaw
 
                 if (IsAvailable(connection, session, previousTime))
                 {
-                    var insertTableQuery = $@"UPDATE [{TableName}] 
+                    var insertTableQuery = $@"UPDATE  [{TableName}] 
                                 SET StartTime = @StartTime, Duration = @Duration
                                 Where Date = @Date AND StartTime = @PreviousTime";
                     _validation.CheckExecute(() => connection.Execute(insertTableQuery, new
@@ -139,7 +139,7 @@ namespace CodingTracker.TwilightSaw
             }
             else
             {
-                var selectTableDateQuery = @$"SELECT Date, StartTime, EndTime from [{TableName}]
+                var selectTableDateQuery = @$"SELECT Date, StartTime, EndTime from  [{TableName}]
                                    WHERE Date = @Date AND EndTime = @PreviousTime";
                 CodingSession selectedSession = connection.QuerySingleOrDefault<CodingSession>(selectTableDateQuery, new
                 {
@@ -170,7 +170,7 @@ namespace CodingTracker.TwilightSaw
 
         public void Delete(SqliteConnection connection, string date, string previousTime)
         {
-            var deleteTableQuery = $@"DELETE FROM [{TableName}]
+            var deleteTableQuery = $@"DELETE FROM  [{TableName}]
                 WHERE Date = @Date AND StartTime = @PreviousTime";
             connection.Execute(deleteTableQuery, new { Date = date, PreviousTime = previousTime});
         }
