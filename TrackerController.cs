@@ -1,5 +1,4 @@
-﻿using System;
-using System.Timers;
+﻿using System.Timers;
 using Dapper;
 using Microsoft.Data.Sqlite;
 using Spectre.Console;
@@ -130,7 +129,7 @@ internal class TrackerController
 
             if (IsAvailable(connection, session, previousTime))
             {
-                var insertTableQuery = $@"UPDATE [{TableName}] 
+                var insertTableQuery = $@"UPDATE '{TableName}' 
                                 SET StartTime = @StartTime, Duration = @Duration
                                 Where Date = @Date AND StartTime = @PreviousTime";
 
