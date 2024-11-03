@@ -115,7 +115,6 @@ while (end)
                         Console.Clear();
                         break;
                     case "Filter per day":
-                        //NOT SORTING ASCENDING BY TIME
                         var dayInput = userInput.CreateRegex(@"^([0-2][0-9]|3[01])\.(0[1-9]|1[0-2])\.(\d{4})$", "Insert desired dd.mm.year: ", "Wrong symbols.");
                         data = controller.ReadBy(connection, dayInput);
                         Console.Clear();

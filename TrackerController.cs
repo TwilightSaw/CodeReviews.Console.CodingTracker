@@ -1,4 +1,5 @@
-﻿using System.Timers;
+﻿using System;
+using System.Timers;
 using Dapper;
 using Microsoft.Data.Sqlite;
 using Spectre.Console;
@@ -109,7 +110,7 @@ internal class TrackerController
         var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from '{TableName}' 
                                     WHERE Date LIKE '%{date}%'";
         var data = connection.Query<CodingSession>(selectTableQuery, new { Date = date }).ToList();
-        _validation.CheckWithMessage(() => DateTime.Parse(data[0].Date), "Empty date.");
+        Validation.CheckWithMessage(() => DateTime.Parse(data[0].Date), "Empty date.");
         return data;
     }
 
@@ -223,6 +224,8 @@ internal class TrackerController
             totalTime += TimeSpan.Parse(session.Duration);
 
         var avgTimeSeconds = totalTime.TotalSeconds / sessionList.Count;
+        if (double.IsNaN(avgTimeSeconds))
+            return (sessionList.Count, totalTime, new TimeSpan(0,0,0));
         TimeSpan avgTime = new(0, 0, Convert.ToInt32(avgTimeSeconds));
         return (sessionList.Count, totalTime, avgTime);
     }
