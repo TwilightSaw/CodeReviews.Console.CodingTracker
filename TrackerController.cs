@@ -110,7 +110,7 @@ internal class TrackerController
         var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from '{TableName}' 
                                     WHERE Date LIKE '%{date}%'";
         var data = connection.Query<CodingSession>(selectTableQuery, new { Date = date }).ToList();
-        Validation.CheckWithMessage(() => DateTime.Parse(data[0].Date), "Empty date.");
+        _validation.CheckWithMessage(() => DateTime.Parse(data[0].Date), "Empty date.");
         return data;
     }
 
@@ -242,7 +242,7 @@ internal class TrackerController
             var sortedList = list.OrderBy(t => TimeSpan.Parse(t.StartTime.ToLongTimeString())).ToList();
             try
             {
-                sortedList[1] = sortedList[0];
+                sortedList[0].ToString();
             }
             catch (ArgumentOutOfRangeException)
             {

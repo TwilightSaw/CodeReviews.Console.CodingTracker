@@ -18,7 +18,7 @@ public class Validation
         return true;
     }
 
-    public static Exception? CheckWithMessage(Action action, string message)
+    public Exception? CheckWithMessage(Action action, string message)
     {
         try
         {

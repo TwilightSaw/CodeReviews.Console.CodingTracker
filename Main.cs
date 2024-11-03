@@ -157,7 +157,7 @@ while (end)
         case "Goals":
             var reportGoalData = controller.CreateReport(connection);
             Console.Write("What is your desired amount of coding hours in a day: ");
-            var goalInput = userInput.CreateSpecifiedInt(12, "Only reachable amount of time.");
+            var goalInput = userInput.CreateSpecifiedInt(12, "Only reachable amount of time: ");
             var goalHours = reportGoalData.Item3.TotalHours;
 
             AnsiConsole.Write(new BarChart()
@@ -166,7 +166,6 @@ while (end)
                 .CenterLabel()
                 .AddItem("Your Time", Math.Round(goalHours, 1), Color.Red)
                 .AddItem("Planned Time", Convert.ToDouble(goalInput), Color.Green));
-
             Console.WriteLine(goalHours > goalInput
                 ? $"You are ahead of plan for {goalHours - goalInput:F1} hours! Congrats!"
                 : $"You need {goalInput - goalHours:F1} hours more to achieve your goal! Keep going!");

@@ -20,6 +20,7 @@ namespace CodingTracker.TwilightSaw
             {
                 Console.Write(message);
                 input = Console.ReadLine();
+                inputInt = Int32.Parse(input);
             }
             return inputInt;
         }
