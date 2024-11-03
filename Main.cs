@@ -1,11 +1,16 @@
-﻿using System.Configuration;
-using CodingTracker.TwilightSaw;
+﻿using CodingTracker.TwilightSaw;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Configuration;
 using Spectre.Console;
-using SQLitePCL;
 
-raw.SetProvider(new SQLite3Provider_e_sqlite3());
-using var connection = new SqliteConnection(ConfigurationManager.AppSettings["connection"]);
+var builder = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+IConfiguration configuration = builder.Build();
+string connectionString = configuration["AppSettings:connection"];
+
+using var connection = new SqliteConnection(connectionString);
 connection.Open();
 
 var session = new CodingSession();
