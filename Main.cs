@@ -3,12 +3,12 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Spectre.Console;
 
-var builder = new ConfigurationBuilder()
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+string projectDirectory = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+string appSettingsPath = Path.Combine(projectDirectory, "appsettings.json");
+var builder = new ConfigurationBuilder().AddJsonFile(appSettingsPath, optional: false, reloadOnChange: true);
 
 IConfiguration configuration = builder.Build();
-string connectionString = configuration["AppSettings:connection"];
+string connectionString = configuration.GetConnectionString("DefaultConnection");
 
 using var connection = new SqliteConnection(connectionString);
 connection.Open();
