@@ -44,7 +44,7 @@ internal class TrackerController
             @Duration
         )";
 
-        session.Date = session.StartTime.Date.ToShortDateString();
+        session.Date = session.StartTime.Date.ToString("dd.MM.yyyy");
         if (IsAvailable(connection, session, null))
         {
             var checkValidation = _validation.IsExecutable(() => connection.Execute(insertTableQuery, new
@@ -55,8 +55,8 @@ internal class TrackerController
                 Duration = session.CalculateDuration()
             }));
             AnsiConsole.Write(checkValidation
-                ? new Rows(new Text("Added successfully", new Style(Color.LightGreen)))
-                : new Rows(new Text("Failed to add", new Style(Color.Red))));
+                ? new Rows(new Text("\nAdded successfully", new Style(Color.LightGreen)))
+                : new Rows(new Text("\nFailed to add", new Style(Color.Red))));
 
         }
         else
@@ -67,7 +67,7 @@ internal class TrackerController
     public void CreateWithTimer(SqliteConnection connection, CodingSession session)
     {
         var dateTime = DateTime.Now;
-        session.StartTime = DateTime.Parse(dateTime.ToShortDateString() + " " + dateTime.ToLongTimeString());
+        session.StartTime = DateTime.Parse(dateTime.ToString("dd.MM.yyyy") + " " + dateTime.ToLongTimeString());
         SetTimer();
 
         AnsiConsole.Write(new Rows(
@@ -77,7 +77,7 @@ internal class TrackerController
         StopTimer();
         _elapsedSeconds = 0;
         dateTime = DateTime.Now;
-        session.EndTime = DateTime.Parse(dateTime.ToShortDateString() + " " + dateTime.ToLongTimeString());
+        session.EndTime = DateTime.Parse(dateTime.ToString("dd.MM.yyyy") + " " + dateTime.ToLongTimeString());
 
         var savedDuration = session.CalculateDuration();
         if (TimeSpan.Parse(session.CalculateDuration()).Ticks < 0)
@@ -88,7 +88,7 @@ internal class TrackerController
             var splitSessionTime =
                 TimeSpan.Parse(DateTime.Today.AddHours(23).AddMinutes(59).AddSeconds(59).ToLongTimeString()) +
                 TimeSpan.Parse(savedDuration);
-            session.EndTime = DateTime.Parse(session.StartTime.ToShortDateString() + " " + splitSessionTime);
+            session.EndTime = DateTime.Parse(session.StartTime.ToString("dd.MM.yyyy") + " " + splitSessionTime);
             Create(connection, session);
         }
         else
@@ -104,12 +104,12 @@ internal class TrackerController
         return data;
     }
 
-    public List<CodingSession> ReadBy(SqliteConnection connection, string date)
+    public List<CodingSession> ReadBy(SqliteConnection connection, string date, string message)
     {
         var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from '{TableName}' 
                                     WHERE Date LIKE '%{date}%'";
         var data = connection.Query<CodingSession>(selectTableQuery, new { Date = date }).ToList();
-        _validation.CheckWithMessage(() => DateTime.Parse(data[0].Date), "Empty date.");
+        _validation.CheckWithMessage(() => DateTime.Parse(data[0].Date), message);
         return data;
     }
 
@@ -192,6 +192,7 @@ internal class TrackerController
         var deleteTableQuery = $@"DELETE FROM '{TableName}'
                 WHERE Date = @Date AND StartTime = @PreviousTime";
         connection.Execute(deleteTableQuery, new { Date = date, PreviousTime = previousTime });
+        AnsiConsole.Write(new Rows(new Text("\nDeleted successfully", new Style(Color.LightGreen))));
     }
 
     public void SetTimer()
@@ -234,7 +235,7 @@ internal class TrackerController
         var sessionStartTime = TimeSpan.Parse(session.StartTime.ToLongTimeString());
         var sessionEndTime = TimeSpan.Parse(session.EndTime.ToLongTimeString());
 
-        var list = ReadBy(connection, session.Date);
+        var list = ReadBy(connection, session.Date, "");
         if (list.Count != 0)
         {
             list.RemoveAll(t => t.StartTime.ToLongTimeString() == previousTime);

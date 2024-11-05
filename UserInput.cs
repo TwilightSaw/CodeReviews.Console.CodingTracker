@@ -29,7 +29,7 @@ namespace CodingTracker.TwilightSaw
         {
             Regex regex = new Regex(regexString);
             var input = AnsiConsole.Prompt(
-                new TextPrompt<string>($"[green]{messageStart}[/]")
+                new TextPrompt<string>($"[lightgreen]{messageStart}[/]")
                     .Validate(value => regex.IsMatch(value)
                         ? ValidationResult.Success()
                         : ValidationResult.Error(messageError)));
@@ -50,7 +50,7 @@ namespace CodingTracker.TwilightSaw
 
         public static string CheckT(string dateInput)
         {
-            return dateInput is "T" or "t" ? DateTime.Now.ToShortDateString() : dateInput;
+            return dateInput is "T" or "t" ? DateTime.Now.ToString("dd.MM.yyyy") : dateInput;
         }
 
         public static string CheckN(string timeInput)

@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.Sqlite;
 using System.Data.SQLite;
+using System.Globalization;
 using System.Runtime.InteropServices.JavaScript;
 
 namespace CodingTracker.TwilightSaw;
@@ -16,7 +17,7 @@ public struct CodingSession
     public DateTime GetStartTime()
     {
         if (StartTime > EndTime)
-            throw new Exception("Bad StartTime or EndTime");
+            throw new Exception("You are trying to add session that finishes in another day or entered bad Start Time or End Time");
         return StartTime;
     }
 
@@ -28,6 +29,6 @@ public struct CodingSession
 
     public override string ToString()
     {
-        return $"{Date} {StartTime.ToLongTimeString()} {EndTime.ToLongTimeString()} {Duration}" ;
+        return $"{Date} {StartTime:dd.MM.yyyy} {EndTime:dd.MM.yyyy} {Duration}" ;
     }
 }

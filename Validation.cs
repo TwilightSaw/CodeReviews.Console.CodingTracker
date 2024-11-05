@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using Spectre.Console;
 
 namespace CodingTracker.TwilightSaw;
 
@@ -12,7 +13,7 @@ public class Validation
         }
         catch (Exception e)
         {
-            Console.WriteLine(e.Message);
+            AnsiConsole.Write(new Rows(new Text($"\n{e.Message}", new Style(Color.Red))));
             return false;
         }
         return true;
