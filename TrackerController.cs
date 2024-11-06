@@ -44,30 +44,74 @@ internal class TrackerController
             @Duration
         )";
 
-        session.Date = session.StartTime.Date.ToString("dd.MM.yyyy");
-        if (IsAvailable(connection, session, null))
+        session.Date = session.StartTime.Date.ToShortDateString();
+
+        var savedDuration = session.CalculateDuration();
+
+
+        if (TimeSpan.Parse(session.CalculateDuration()).Ticks < 0)
         {
-            var checkValidation = _validation.IsExecutable(() => connection.Execute(insertTableQuery, new
+            bool checkValidation = false;
+            session.EndTime = DateTime.MaxValue;
+            session.CalculateDuration();
+            if (IsAvailable(connection, session, null))
             {
-                session.Date,
-                StartTime = session.GetStartTime().ToLongTimeString(),
-                EndTime = session.EndTime.ToLongTimeString(),
-                Duration = session.CalculateDuration()
-            }));
+                checkValidation = _validation.IsExecutable(() => connection.Execute(insertTableQuery, new
+                {
+                    session.Date,
+                    StartTime = session.GetStartTime().ToLongTimeString(),
+                    EndTime = session.EndTime.ToLongTimeString(),
+                    Duration = session.CalculateDuration()
+                }));
+            }
+            session.StartTime = DateTime.Today;
+            session.Date = DateTime.Today.AddDays(1).ToShortDateString();
+            var splitSessionTime =
+                TimeSpan.Parse(DateTime.Today.AddHours(23).ToLongTimeString()) +
+                TimeSpan.Parse(savedDuration);
+            session.EndTime = DateTime.Parse(session.StartTime.ToShortDateString() + " " + splitSessionTime);
+            session.CalculateDuration();
+            if (IsAvailable(connection, session, null))
+            {
+                checkValidation = _validation.IsExecutable(() => connection.Execute(insertTableQuery, new
+                {
+                    session.Date,
+                    StartTime = session.GetStartTime().ToLongTimeString(),
+                    EndTime = session.EndTime.ToLongTimeString(),
+                    Duration = session.CalculateDuration()
+                }));
+            }
             AnsiConsole.Write(checkValidation
                 ? new Rows(new Text("\nAdded successfully", new Style(Color.LightGreen)))
                 : new Rows(new Text("\nFailed to add", new Style(Color.Red))));
-
         }
         else
-            AnsiConsole.Write(new Rows(
-                new Text("Your session is crossing another sessions.", new Style(Color.Red))));
+        {
+            if (IsAvailable(connection, session, null))
+            {
+                var checkValidation = _validation.IsExecutable(() => connection.Execute(insertTableQuery, new
+                {
+                    session.Date,
+                    StartTime = session.GetStartTime().ToLongTimeString(),
+                    EndTime = session.EndTime.ToLongTimeString(),
+                    Duration = session.CalculateDuration()
+                }));
+                AnsiConsole.Write(checkValidation
+                    ? new Rows(new Text("\nAdded successfully", new Style(Color.LightGreen)))
+                    : new Rows(new Text("\nFailed to add", new Style(Color.Red))));
+            }
+            else
+            {
+                AnsiConsole.Write(new Rows(
+                    new Text("Your session is crossing another sessions.", new Style(Color.Red))));
+            }
+        }
     }
 
     public void CreateWithTimer(SqliteConnection connection, CodingSession session)
     {
         var dateTime = DateTime.Now;
-        session.StartTime = DateTime.Parse(dateTime.ToString("dd.MM.yyyy") + " " + dateTime.ToLongTimeString());
+        session.StartTime = DateTime.Parse(dateTime.ToShortDateString() + " " + dateTime.ToLongTimeString());
         SetTimer();
 
         AnsiConsole.Write(new Rows(
@@ -77,7 +121,7 @@ internal class TrackerController
         StopTimer();
         _elapsedSeconds = 0;
         dateTime = DateTime.Now;
-        session.EndTime = DateTime.Parse(dateTime.ToString("dd.MM.yyyy") + " " + dateTime.ToLongTimeString());
+        session.EndTime = DateTime.Parse(dateTime.ToShortDateString() + " " + dateTime.ToLongTimeString());
 
         var savedDuration = session.CalculateDuration();
         if (TimeSpan.Parse(session.CalculateDuration()).Ticks < 0)
@@ -88,7 +132,7 @@ internal class TrackerController
             var splitSessionTime =
                 TimeSpan.Parse(DateTime.Today.AddHours(23).AddMinutes(59).AddSeconds(59).ToLongTimeString()) +
                 TimeSpan.Parse(savedDuration);
-            session.EndTime = DateTime.Parse(session.StartTime.ToString("dd.MM.yyyy") + " " + splitSessionTime);
+            session.EndTime = DateTime.Parse(session.StartTime.ToShortDateString() + " " + splitSessionTime);
             Create(connection, session);
         }
         else
@@ -159,7 +203,8 @@ internal class TrackerController
                 Date = session.EndTime.Date.ToShortDateString(),
                 PreviousTime = previousTime
             });
-            session.StartTime = DateTime.Parse(selectedSession.Date + " " + selectedSession.GetStartTime().ToLongTimeString());
+            session.StartTime =
+                DateTime.Parse(selectedSession.Date + " " + selectedSession.GetStartTime().ToLongTimeString());
             session.Date = session.EndTime.Date.ToShortDateString();
 
             if (!_validation.IsExecutable(() => session.GetStartTime())) return;
@@ -225,7 +270,7 @@ internal class TrackerController
 
         var avgTimeSeconds = totalTime.TotalSeconds / sessionList.Count;
         if (double.IsNaN(avgTimeSeconds))
-            return (sessionList.Count, totalTime, new TimeSpan(0,0,0));
+            return (sessionList.Count, totalTime, new TimeSpan(0, 0, 0));
         TimeSpan avgTime = new(0, 0, Convert.ToInt32(avgTimeSeconds));
         return (sessionList.Count, totalTime, avgTime);
     }

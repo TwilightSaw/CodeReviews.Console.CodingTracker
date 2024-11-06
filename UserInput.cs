@@ -50,7 +50,7 @@ namespace CodingTracker.TwilightSaw
 
         public static string CheckT(string dateInput)
         {
-            return dateInput is "T" or "t" ? DateTime.Now.ToString("dd.MM.yyyy") : dateInput;
+            return dateInput is "T" or "t" ? DateTime.Now.ToShortDateString() : dateInput;
         }
 
         public static string CheckN(string timeInput)

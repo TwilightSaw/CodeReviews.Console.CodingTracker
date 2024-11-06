@@ -1,10 +1,4 @@
-﻿using Dapper;
-using Microsoft.Data.Sqlite;
-using System.Data.SQLite;
-using System.Globalization;
-using System.Runtime.InteropServices.JavaScript;
-
-namespace CodingTracker.TwilightSaw;
+﻿namespace CodingTracker.TwilightSaw;
 
 public struct CodingSession
 {
@@ -29,6 +23,6 @@ public struct CodingSession
 
     public override string ToString()
     {
-        return $"{Date} {StartTime:dd.MM.yyyy} {EndTime:dd.MM.yyyy} {Duration}" ;
+        return $"{Date} {StartTime.ToLongTimeString()} {EndTime.ToLongTimeString()} {Duration}" ;
     }
 }

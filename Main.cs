@@ -18,9 +18,6 @@ var controller = new TrackerController(connection);
 var userInput = new UserInput();
 var end = true;
 
-var time = DateTime.Now;
-Console.WriteLine(time.ToString("dd.MM.yyyy"));
-
 while (end)
 {
     var panelHeader = new Panel("[blue]Welcome to the Coding Tracker![/]").Padding(42, 3, 3, 3).Expand();
