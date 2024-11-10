@@ -17,8 +17,9 @@ public struct CodingSession
 
     public string CalculateDuration()
     {
-        Duration = (TimeSpan.Parse(EndTime.ToLongTimeString()) - TimeSpan.Parse(StartTime.ToLongTimeString())).ToString();
-        return Duration;
+        TimeSpan.TryParse(EndTime.ToLongTimeString(), out var endTime);
+        TimeSpan.TryParse(StartTime.ToLongTimeString(), out var startTime);
+        return (endTime - startTime).ToString();
     }
 
     public override string ToString()

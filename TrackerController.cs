@@ -45,11 +45,9 @@ internal class TrackerController
         )";
 
         session.Date = session.StartTime.Date.ToShortDateString();
-
-        var savedDuration = session.CalculateDuration();
-
-
-        if (TimeSpan.Parse(session.CalculateDuration()).Ticks < 0)
+        var savedEndTime = session.EndTime;
+        TimeSpan.TryParse(session.CalculateDuration(), out var duration);
+        if (duration.Ticks < 0)
         {
             bool checkValidation = false;
             session.EndTime = DateTime.MaxValue;
@@ -66,10 +64,7 @@ internal class TrackerController
             }
             session.StartTime = DateTime.Today;
             session.Date = DateTime.Today.AddDays(1).ToShortDateString();
-            var splitSessionTime =
-                TimeSpan.Parse(DateTime.Today.AddHours(23).ToLongTimeString()) +
-                TimeSpan.Parse(savedDuration);
-            session.EndTime = DateTime.Parse(session.StartTime.ToShortDateString() + " " + splitSessionTime);
+            session.EndTime = savedEndTime;
             session.CalculateDuration();
             if (IsAvailable(connection, session, null))
             {
@@ -101,17 +96,16 @@ internal class TrackerController
                     : new Rows(new Text("\nFailed to add", new Style(Color.Red))));
             }
             else
-            {
                 AnsiConsole.Write(new Rows(
                     new Text("Your session is crossing another sessions.", new Style(Color.Red))));
-            }
         }
     }
 
     public void CreateWithTimer(SqliteConnection connection, CodingSession session)
     {
         var dateTime = DateTime.Now;
-        session.StartTime = DateTime.Parse(dateTime.ToShortDateString() + " " + dateTime.ToLongTimeString());
+        DateTime.TryParse(dateTime.ToShortDateString() + " " + dateTime.ToLongTimeString(), out var timerStartTime);
+        session.StartTime = timerStartTime;
         SetTimer();
 
         AnsiConsole.Write(new Rows(
@@ -121,24 +115,25 @@ internal class TrackerController
         StopTimer();
         _elapsedSeconds = 0;
         dateTime = DateTime.Now;
-        session.EndTime = DateTime.Parse(dateTime.ToShortDateString() + " " + dateTime.ToLongTimeString());
+        DateTime.TryParse(dateTime.ToShortDateString() + " " + dateTime.ToLongTimeString(), out var timerEndTime);
+        session.EndTime = timerEndTime;
 
-        var savedDuration = session.CalculateDuration();
-        if (TimeSpan.Parse(session.CalculateDuration()).Ticks < 0)
+        TimeSpan.TryParse(session.CalculateDuration(), out var savedDuration);
+        if (savedDuration.Ticks < 0)
         {
             session.EndTime = DateTime.MaxValue;
             Create(connection, session);
             session.StartTime = DateTime.Today;
-            var splitSessionTime =
-                TimeSpan.Parse(DateTime.Today.AddHours(23).AddMinutes(59).AddSeconds(59).ToLongTimeString()) +
-                TimeSpan.Parse(savedDuration);
-            session.EndTime = DateTime.Parse(session.StartTime.ToShortDateString() + " " + splitSessionTime);
+            TimeSpan.TryParse(DateTime.Today.AddHours(23).AddMinutes(59).AddSeconds(59).ToLongTimeString(),
+                out var noonTime);
+            var splitSessionTime = noonTime + savedDuration;
+            DateTime.TryParse(session.StartTime.ToShortDateString() + " " + splitSessionTime,
+                out var splitSessionEndTime);
+            session.EndTime = splitSessionEndTime;
             Create(connection, session);
         }
         else
-        {
             Create(connection, session);
-        }
     }
 
     public List<CodingSession> Read(SqliteConnection connection)
@@ -153,7 +148,7 @@ internal class TrackerController
         var selectTableQuery = @$"SELECT Id, Date, StartTime, EndTime, Duration from '{TableName}' 
                                     WHERE Date LIKE '%{date}%'";
         var data = connection.Query<CodingSession>(selectTableQuery, new { Date = date }).ToList();
-        _validation.CheckWithMessage(() => DateTime.Parse(data[0].Date), message);
+        _validation.CheckWithMessage(() => DateTime.TryParse(data[0].Date, out _), message);
         return data;
     }
 
@@ -168,7 +163,9 @@ internal class TrackerController
                 Date = session.StartTime.Date.ToShortDateString(),
                 PreviousTime = previousTime
             });
-            session.EndTime = DateTime.Parse(selectedSession.Date + " " + selectedSession.EndTime.ToLongTimeString());
+            DateTime.TryParse(selectedSession.Date + " " + selectedSession.EndTime.ToLongTimeString(),
+                out var selectedEndTime);
+            session.EndTime = selectedEndTime;
             session.Date = session.StartTime.Date.ToShortDateString();
 
             if (IsAvailable(connection, session, previousTime))
@@ -189,10 +186,8 @@ internal class TrackerController
                     : new Rows(new Text("Failed to add", new Style(Color.Red))));
             }
             else
-            {
                 AnsiConsole.Write(new Rows(
                     new Text("Your session is crossing another sessions.", new Style(Color.Red))));
-            }
         }
         else
         {
@@ -203,8 +198,9 @@ internal class TrackerController
                 Date = session.EndTime.Date.ToShortDateString(),
                 PreviousTime = previousTime
             });
-            session.StartTime =
-                DateTime.Parse(selectedSession.Date + " " + selectedSession.GetStartTime().ToLongTimeString());
+            DateTime.TryParse(selectedSession.Date + " " + selectedSession.GetStartTime().ToLongTimeString(),
+                out var selectedStartTime);
+            session.StartTime = selectedStartTime;
             session.Date = session.EndTime.Date.ToShortDateString();
 
             if (!_validation.IsExecutable(() => session.GetStartTime())) return;
@@ -225,10 +221,8 @@ internal class TrackerController
                     : new Rows(new Text("Failed to add", new Style(Color.Red))));
             }
             else
-            {
                 AnsiConsole.Write(new Rows(
                     new Text("Your session is crossing another sessions.", new Style(Color.Red))));
-            }
         }
     }
 
@@ -266,8 +260,10 @@ internal class TrackerController
         TimeSpan totalTime = new(0, 0, 0);
 
         foreach (var session in sessionList)
-            totalTime += TimeSpan.Parse(session.Duration);
-
+        {
+            TimeSpan.TryParse(session.Duration, out var duration);
+            totalTime += duration;
+        }
         var avgTimeSeconds = totalTime.TotalSeconds / sessionList.Count;
         if (double.IsNaN(avgTimeSeconds))
             return (sessionList.Count, totalTime, new TimeSpan(0, 0, 0));
@@ -277,45 +273,34 @@ internal class TrackerController
 
     public bool IsAvailable(SqliteConnection connection, CodingSession session, string? previousTime)
     {
-        var sessionStartTime = TimeSpan.Parse(session.StartTime.ToLongTimeString());
-        var sessionEndTime = TimeSpan.Parse(session.EndTime.ToLongTimeString());
+        TimeSpan.TryParse(session.StartTime.ToLongTimeString(), out var sessionStartTime);
+        TimeSpan.TryParse(session.EndTime.ToLongTimeString(), out var sessionEndTime);
 
         var list = ReadBy(connection, session.Date, "");
         if (list.Count != 0)
         {
             list.RemoveAll(t => t.StartTime.ToLongTimeString() == previousTime);
             var sortedList = list.OrderBy(t => TimeSpan.Parse(t.StartTime.ToLongTimeString())).ToList();
-            try
-            {
-                sortedList[0].ToString();
-            }
-            catch (ArgumentOutOfRangeException)
-            {
+            if (sortedList.Count == 0)
                 return true;
-            }
-
-            if (sessionStartTime < TimeSpan.Parse(sortedList[0].StartTime.ToLongTimeString()) &&
-                sessionEndTime < TimeSpan.Parse(sortedList[0].StartTime.ToLongTimeString()))
+            TimeSpan.TryParse(sortedList[0].StartTime.ToLongTimeString(), out var firstSessionStartTime);
+            if (sessionStartTime < firstSessionStartTime && sessionEndTime < firstSessionStartTime)
                 return true;
 
             for (var i = 1; i <= sortedList.Count - 1; i++)
             {
-                var currentListSession = sortedList[i - 1];
-                var nextListSession = sortedList[i];
-                if (sessionStartTime > TimeSpan.Parse(currentListSession.EndTime.ToLongTimeString()) &&
-                    sessionEndTime < TimeSpan.Parse(nextListSession.StartTime.ToLongTimeString()))
+                TimeSpan.TryParse(sortedList[i - 1].EndTime.ToLongTimeString(), out var currentSessionEndTime);
+                TimeSpan.TryParse(sortedList[i].StartTime.ToLongTimeString(), out var nextSessionStartTime);
+                if (sessionStartTime > currentSessionEndTime && sessionEndTime < nextSessionStartTime)
                     return true;
             }
 
-            if (sessionStartTime > TimeSpan.Parse(sortedList[^1].EndTime.ToLongTimeString()) &&
-                sessionEndTime > TimeSpan.Parse(sortedList[^1].EndTime.ToLongTimeString()))
+            TimeSpan.TryParse(sortedList[^1].EndTime.ToLongTimeString(), out var lastSessionEndTime);
+            if (sessionStartTime > lastSessionEndTime && sessionEndTime > lastSessionEndTime)
                 return true;
         }
         else
-        {
             return true;
-        }
-
         return false;
     }
 
